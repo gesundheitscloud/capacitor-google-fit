@@ -1,8 +1,19 @@
 # Google Fit Plugin
 
-Capacitor plugin to retrieve data from Google Fit
+v2 is going to be a nearly complete rewrite of the plugin and still under heavy development. Things might not work just yet, but we are on it!
 
-### Install
+**TODO list:**
+
+- [x] Import Steps
+- [x] Import Weight
+      <<<<<<< HEAD
+- [x] # Import Activities
+  > > > > > > > origin/next
+- [ ] Import Activities
+- [ ] Import Sleep
+- [ ] Import Pulse?
+
+## Install
 
 ```
 npm i --save @perfood/capacitor-google-fit
@@ -22,7 +33,7 @@ To do this:
    - macOS : ~/.android
    - Windows : C:\Users\your-user-name\.android\
 
-2. List the SHA-1 fingerprint:
+2. List the SHA-1 fingerprint:!
 
    - macOS
 
@@ -38,7 +49,7 @@ To do this:
 
 The line that begins with SHA1 contains the certificate's SHA-1 fingerprint.
 
-##### 2. Request an OAuth 2.0 client ID in the Google API Console :
+#### 2. Request an OAuth 2.0 client ID in the Google API Console :
 
 1. Go to the [Google API Console](https://console.developers.google.com/flows/enableapi?apiid=fitness)
 2. Create a project or choose existing project
@@ -58,7 +69,7 @@ The line that begins with SHA1 contains the certificate's SHA-1 fingerprint.
 
 8. Click Create. Your new Android OAuth 2.0 Client ID and secret appear in the list of IDs for your project.
    An OAuth 2.0 Client ID is a string of characters, something like this:
-   `780816631155-gbvyo1o7r2pn95qc4ei9d61io4uh48hl.apps.googleusercontent.com`
+   `780816531155-gbvyo1o7r2pn95tc4ei9d61io4uh48hl.apps.googleusercontent.com`
 
 ### Set up in Android
 
@@ -83,50 +94,147 @@ import { Plugins } from '@capacitor/core';
 const { GoogleFit } = Plugins;
 ```
 
-### Supported data types :
+## Usage
 
-| Data Type | Unit         | Google Fit equivalent  |
-| --------- | ------------ | ---------------------- |
-| step      | count        | TYPE_STEP_COUNT_DELTA  |
-| calories  | kcal         | TYPE_CALORIES_EXPENDED |
-| distance  | m            | TYPE_DISTANCE_DELTA    |
-| weight    | kg           | TYPE_WEIGHT            |
-| height    | m            | TYPE_HEIGHT            |
-| activity  | activityType | TYPE_ACTIVITY_SEGMENT  |
+### First time Usage
 
-### Methods :
+Before you can query for Data you have to connect to Google Fit you first have to import the GoogleFit Plugin and connect the User to Google Fit. An Example Service could look like this:
 
-#### connectToGoogleFit()
+#### **`example.service.ts`**
 
-Plugin method to connect to google fit service using user account.
-It will first check if the user has permissions to talk to Fitness APIs,
-otherwise authenticate the user and request required permissions.
+```ts
+import { GoogleFit } from '@perfood/capacitor-google-fit';
 
-#### getHistory(startTime: string, endTime: string)
+export class ExampleService {
+  constructor() {}
 
-A method which retrieve data from a specific time interval provided in parametre:
-
-- startDate: {type: String}, start date from which to get data
-- endDate: {type: String}, end data to which to get the data
-  Example:
-
-```
-  async getHistory() {
-    const today = new Date();
-    const lastWeek = new Date(today);
-    lastWeek.setDate(lastWeek.getDate() - 7);
-    const result = await GoogleFit.getHistory({
-      startTime: lastWeek,
-      endTime: today
-    });
-    console.log(result);
+  public async connect(): Promise<void> {
+    await GoogleFit.connectToGoogleFit();
   }
+}
 ```
 
-#### getHistoryActivity()
+### Query for Steps
 
-Same as getHistory() method but this time to retrieve activities
-Returned objects contain a set of fixed fields for each activity:
+To query for steps, you need to define the following Parameteres, also defined in ExtendedQueryInput:
 
-- startDate: {type: String} a date indicating when an activity starts
-- endDate: {type: String} a date indicating when an activity ends
+```
+startTime: Date;
+endTime: Date;
+bucketSize: number;
+timeUnit: TimeUnit; //p.e. "DAYS","HOURS","MINUTES",...
+```
+
+The bucketSize and timeUnit will define in what chunks Google fit will deliver your data.
+an Example function to get Step Data in chunks of hours, looks like this:
+
+#### **`example.service.ts`**
+
+```ts
+import { GoogleFit, SimpleData } from '@perfood/capacitor-google-fit';
+
+export class ExampleService {
+  constructor() {}
+
+  public async getSteps(): Promise<SimpleData[]> {
+    const today = new Date();
+    const lastWeek = new Date();
+
+    lastWeek.setDate(
+      today.getFullYear(),
+      today.getMonth(),
+      today.getDate() - 7,
+    );
+
+    const result = await GoogleFit.getSteps({
+      startTime: lastWeek,
+      endTime: today,
+      timeUnit: TimeUnit.HOURS,
+      bucketSize: 1,
+    });
+
+    return result.steps;
+  }
+}
+```
+
+### Query for Weight
+
+To query for weight, you need to define the following Parameteres, also defined in QueryInput:
+
+```
+startTime: Date;
+endTime: Date;
+```
+
+an example function to get Weight Data, looks like this:
+
+#### **`example.service.ts`**
+
+```ts
+import { GoogleFit, SimpleData } from '@perfood/capacitor-google-fit';
+
+export class ExampleService {
+  constructor() {}
+
+  public async getWeight(): Promise<SimpleData[]> {
+    const today = new Date();
+    const lastWeek = new Date();
+
+    lastWeek.setDate(
+      today.getFullYear(),
+      today.getMonth(),
+      today.getDate() - 7,
+    );
+
+    const result = await GoogleFit.getWeight({
+      startTime: lastWeek,
+      endTime: today,
+    });
+
+    return result.weights;
+  }
+}
+```
+
+### Query for Activities
+
+To query for actvities, you need to define the following Parameteres, also defined in ExtendedQueryInput:
+
+```
+startTime: Date;
+endTime: Date;
+bucketSize: number;
+timeUnit: TimeUnit; //p.e. "DAYS","HOURS","MINUTES",...
+```
+
+The bucketSize and timeUnit will define the minimum length of an activity.
+
+Many activities will have the type unknown or in_vehicle - you will have to filter those out manually.
+
+an Example function to get Activities, looks like this:
+
+#### **`example.service.ts`**
+
+```ts
+import { GoogleFit, StepData } from '@perfood/capacitor-google-fit';
+export class ExampleService {
+  constructor() {}
+  public async getActivities(): Promise<ActivityData[]> {
+    const today = new Date();
+    const lastWeek = new Date();
+    lastWeek.setDate(
+      today.getFullYear(),
+      today.getMonth(),
+      today.getDate() - 7,
+    );
+    const result = await GoogleFit.getSteps({
+      startTime: lastWeek,
+      endTime: today,
+      timeUnit: TimeUnit.MINUTES,
+      bucketSize: 1,
+    });
+    return result.activities;
+  }
+}
+```

@@ -14,18 +14,25 @@ export interface GoogleFitPlugin {
   isAllowed(): Promise<AllowedResult>;
 
   /**
-   * Get history
+   * Get step history @param bucketSize and @param timeUnit you can define the buckets in which the data is returned
    * @returns {Promise}
-   * @resolve AccountData
+   * @resolve StepQueryResult
    */
-  getHistory(call: QueryInput): Promise<DayContainer>;
+  getSteps(call: ExtendedQueryInput): Promise<StepQueryResult>;
 
   /**
-   * Get history activity
+   * Get weight history
    * @returns {Promise}
-   * @resolve AccountData
+   * @resolve WeightQueryResult
    */
-  getHistoryActivity(call: QueryInput): Promise<ActivityContainer>;
+  getWeight(call: QueryInput): Promise<WeightQueryResult>;
+
+  /**
+   * Get Activites, with @param bucketSize and @param timeUnit you can define the minimum length of an activity
+   * @returns {Promise}
+   * @resolve ActivityQueryResult
+   */
+  getActivities(call: ExtendedQueryInput): Promise<ActivityQueryResult>;
 }
 
 export interface PermissionData {
@@ -37,41 +44,55 @@ export interface QueryInput {
   endTime: Date;
 }
 
-export interface ActivityContainer {
-  activities: HistoryActivityData[];
+export interface ExtendedQueryInput extends QueryInput {
+  bucketSize: number;
+  timeUnit: TimeUnit;
 }
 
-export interface DayContainer {
-  days: HistoryData[];
+/**
+ * The results of a ActivityQuery.
+ * The @param value inside of SimpleData has the values representing the Google Fit Constants as the name of the activity
+ */
+export interface ActivityQueryResult {
+  activities: ActivityData[];
 }
 
-export interface HistoryData {
-  start: string;
-  end: string;
-  /**
-  Distance travelled in meters.
-  Valid range: 0—100 meters per second
-   */
-  distance: string;
-  /**meters per second */
-  speed: string;
-  /*
-  This data type captures the total calories (in kilocalories) burned by the user, including calories burned at rest (BMR or Basalrate)!
-  */
-  calories: string;
+/**
+ * The results of a WeightQuery.
+ * The @param value inside of SimpleData has the unit kilograms
+ */
+export interface WeightQueryResult {
+  weights: SimpleData[];
 }
 
-export interface HistoryActivityData {
-  start: string;
-  end: string;
-  distance?: string;
-  speed?: string;
-  calories?: string;
-  activity?: string;
-  weight?: string;
-  steps?: string;
+/**
+ * The results of a StepQuery.
+ * The @param value inside of SimpleData always represents a count
+ */
+export interface StepQueryResult {
+  steps: SimpleData[];
+}
+export interface SimpleData {
+  startTime: string;
+  endTime: string;
+  value: number;
+}
+
+export interface ActivityData extends SimpleData {
+  calories: number;
+  name: string;
 }
 
 export interface AllowedResult {
   allowed: boolean;
+}
+
+export enum TimeUnit {
+  NANOSECONDS = 'NANOSECONDS',
+  MICROSECONDS = 'MICROSECONDS',
+  MILLISECONDS = 'MILLISECONDS',
+  SECONDS = 'SECONDS',
+  MINUTES = 'MINUTES',
+  HOURS = 'HOURS',
+  DAYS = 'DAYS',
 }
